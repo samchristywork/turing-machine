@@ -1,0 +1,10 @@
+{
+  "states": [
+    {"state": "A", "tape_symbol": " ", "write_symbol": "1", "direction": "R", "next_state": "B"},
+    {"state": "A", "tape_symbol": "1", "write_symbol": "1", "direction": "L", "next_state": "C"},
+    {"state": "B", "tape_symbol": " ", "write_symbol": "1", "direction": "L", "next_state": "A"},
+    {"state": "B", "tape_symbol": "1", "write_symbol": "1", "direction": "R", "next_state": "B"},
+    {"state": "C", "tape_symbol": " ", "write_symbol": "1", "direction": "L", "next_state": "B"},
+    {"state": "C", "tape_symbol": "1", "write_symbol": "1", "direction": "R", "next_state": "HALT"}
+  ]
+}
