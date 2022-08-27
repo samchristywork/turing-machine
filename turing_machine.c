@@ -18,7 +18,7 @@ typedef struct state {
   char next_state[16];
 } state;
 
-state *read_json(char *filename, int *len) {
+state *read_json(char *filename, int *len, char *tape) {
   FILE *f = fopen(filename, "rb");
   if (!f) {
     perror("fopen");
@@ -47,6 +47,13 @@ state *read_json(char *filename, int *len) {
     }
     cJSON_Delete(cjson);
     exit(EXIT_FAILURE);
+  }
+
+  const cJSON *initial_tape = cJSON_GetObjectItemCaseSensitive(cjson, "initial_tape");
+  if (initial_tape && cJSON_IsString(initial_tape)) {
+    for (int i = 0; i < strlen(initial_tape->valuestring); i++) {
+      tape[i] = initial_tape->valuestring[i];
+    }
   }
 
   state *s;
@@ -139,13 +146,18 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  char tape[80];
+  memset(tape, ' ', 80);
+  tape[79] = 0;
+  int head = 0;
+
   state *state_machine;
   int state_machine_len = 0;
   if (optind < argc) {
     int i = optind;
     while (i < argc) {
       fprintf(stdout, "Got additional argument: %s\n", argv[i]);
-      state_machine = read_json(argv[i], &state_machine_len);
+      state_machine = read_json(argv[i], &state_machine_len, tape);
       i++;
     }
   }
@@ -153,11 +165,7 @@ int main(int argc, char *argv[]) {
   int sequence = 0;
   char instruction[16];
   strcpy(instruction, "A");
-  char tape[80];
-  memset(tape, ' ', 80);
-  tape[79] = 0;
-  int head = 40;
-  int max_ops = 15;
+  int max_ops = 100;
 
   for (sequence = 0; strcmp(instruction, "HALT") != 0 && sequence < max_ops; sequence++) {
     char tape_string[79];
