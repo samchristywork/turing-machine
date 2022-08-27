@@ -10,6 +10,20 @@ enum states {
   HALT
 };
 
+enum direction {
+  NOP = 0,
+  L = -1,
+  R = 1
+};
+
+typedef struct state {
+  int state;
+  char tape_symbol;
+  char write_symbol;
+  int direction;
+  int next_state;
+} state;
+
 void usage(char *argv[]) {
   fprintf(stderr,
           "Usage: %s [file]\n"
@@ -52,6 +66,15 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  state state_machine[] = {
+      {.state = A, .tape_symbol = ' ', .write_symbol = '1', .direction = R, .next_state = B},
+      {.state = A, .tape_symbol = '1', .write_symbol = '1', .direction = L, .next_state = C},
+      {.state = B, .tape_symbol = ' ', .write_symbol = '1', .direction = L, .next_state = A},
+      {.state = B, .tape_symbol = '1', .write_symbol = '1', .direction = R, .next_state = B},
+      {.state = C, .tape_symbol = ' ', .write_symbol = '1', .direction = L, .next_state = B},
+      {.state = C, .tape_symbol = '1', .write_symbol = '1', .direction = R, .next_state = HALT}};
+
+
   int sequence = 0;
   char instruction = A;
   char tape[80];
@@ -60,46 +83,20 @@ int main(int argc, char *argv[]) {
   int head = 40;
 
   for (sequence = 0; instruction != HALT; sequence++) {
-    printf("|%s|\n", tape);
+    char tape_string[79];
+    memcpy(tape_string, tape, 79);
+    tape_string[head] = 'h';
+    printf("|%s|\n", tape_string);
 
-    switch (instruction) {
-    case A:
-      if (tape[head] == ' ') {
-        tape[head] = '1';
-        head++;
-        instruction = B;
-      } else {
-        tape[head] = '1';
-        head--;
-        instruction = C;
+    for (int i = 0; i < 6; i++) {
+      if (instruction == state_machine[i].state) {
+        if (tape[head] == state_machine[i].tape_symbol) {
+          tape[head] = state_machine[i].write_symbol;
+          head += state_machine[i].direction;
+          instruction = state_machine[i].next_state;
+          break;
+        }
       }
-      break;
-    case B:
-      if (tape[head] == ' ') {
-        tape[head] = '1';
-        head--;
-        instruction = A;
-      } else {
-        tape[head] = '1';
-        head++;
-        instruction = B;
-      }
-      break;
-    case C:
-      if (tape[head] == ' ') {
-        tape[head] = '1';
-        head--;
-        instruction = B;
-      } else {
-        tape[head] = '1';
-        head++;
-        instruction = HALT;
-      }
-      break;
-    case HALT:
-      break;
-    default:
-      fprintf(stderr, "Something has gone wrong.\n");
     }
   }
 }
