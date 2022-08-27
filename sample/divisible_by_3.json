@@ -1,0 +1,16 @@
+{
+  "initial_tape": "00100101000111000101001010000010000101",
+  "states": [
+    {"state": "A", "tape_symbol": "0", "write_symbol": "0", "direction": "R", "next_state": "A"},
+    {"state": "A", "tape_symbol": "1", "write_symbol": "1", "direction": "R", "next_state": "B"},
+    {"state": "B", "tape_symbol": "0", "write_symbol": "0", "direction": "R", "next_state": "C"},
+    {"state": "B", "tape_symbol": "1", "write_symbol": "1", "direction": "R", "next_state": "A"},
+    {"state": "C", "tape_symbol": "0", "write_symbol": "0", "direction": "R", "next_state": "B"},
+    {"state": "C", "tape_symbol": "1", "write_symbol": "1", "direction": "R", "next_state": "C"},
+    {"state": "A", "tape_symbol": " ", "write_symbol": " ", "direction": "N", "next_state": "IS_DIVISIBLE"},
+    {"state": "B", "tape_symbol": " ", "write_symbol": " ", "direction": "N", "next_state": "ISNT_DIVISIBLE"},
+    {"state": "C", "tape_symbol": " ", "write_symbol": " ", "direction": "N", "next_state": "ISNT_DIVISIBLE"},
+    {"state": "IS_DIVISIBLE", "tape_symbol": " ", "write_symbol": " ", "direction": "N", "next_state": "HALT"},
+    {"state": "ISNT_DIVISIBLE", "tape_symbol": " ", "write_symbol": " ", "direction": "N", "next_state": "HALT"}
+  ]
+}
