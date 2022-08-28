@@ -18,7 +18,7 @@ typedef struct state {
   char next_state[16];
 } state;
 
-state *read_json(char *filename, int *len, char *tape) {
+state *read_json(char *filename, int *len, int *max_iterations, char *tape) {
   FILE *f = fopen(filename, "rb");
   if (!f) {
     perror("fopen");
@@ -54,6 +54,11 @@ state *read_json(char *filename, int *len, char *tape) {
     for (int i = 0; i < strlen(initial_tape->valuestring); i++) {
       tape[i] = initial_tape->valuestring[i];
     }
+  }
+
+  const cJSON *mi = cJSON_GetObjectItemCaseSensitive(cjson, "max_iterations");
+  if (mi && cJSON_IsNumber(mi)) {
+    (*max_iterations) = mi->valueint;
   }
 
   state *s;
@@ -153,11 +158,12 @@ int main(int argc, char *argv[]) {
 
   state *state_machine;
   int state_machine_len = 0;
+  int max_iterations = 0;
   if (optind < argc) {
     int i = optind;
     while (i < argc) {
       fprintf(stdout, "Got additional argument: %s\n", argv[i]);
-      state_machine = read_json(argv[i], &state_machine_len, tape);
+      state_machine = read_json(argv[i], &state_machine_len, &max_iterations, tape);
       i++;
     }
   }
@@ -165,13 +171,12 @@ int main(int argc, char *argv[]) {
   int sequence = 0;
   char instruction[16];
   strcpy(instruction, "A");
-  int max_ops = 100;
 
-  for (sequence = 0; strcmp(instruction, "HALT") != 0 && sequence < max_ops; sequence++) {
+  for (sequence = 0; strcmp(instruction, "HALT") != 0 && (sequence < max_iterations || max_iterations == 0); sequence++) {
     char tape_string[79];
     memcpy(tape_string, tape, 79);
     tape_string[head] = 'h';
-    printf("|%s|\n", tape_string);
+    printf("|%s| %s\n", tape_string, instruction);
 
     int found_state = 0;
     for (int i = 0; i < state_machine_len; i++) {

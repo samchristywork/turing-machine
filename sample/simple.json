@@ -1,4 +1,5 @@
 {
+  "max_iterations": 100,
   "states": [
     {"state": "A", "tape_symbol": " ", "write_symbol": "1", "direction": "R", "next_state": "A"},
     {"state": "A", "tape_symbol": "1", "write_symbol": " ", "direction": "L", "next_state": "A"}
