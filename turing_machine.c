@@ -175,6 +175,7 @@ int main(int argc, char *argv[]) {
   for (sequence = 0; strcmp(instruction, "HALT") != 0 && (sequence < max_iterations || max_iterations == 0); sequence++) {
     char tape_string[79];
     memcpy(tape_string, tape, 79);
+    tape_string[79] = 0;
     tape_string[head] = 'h';
     printf("|%s| %s\n", tape_string, instruction);
 
@@ -201,4 +202,6 @@ int main(int argc, char *argv[]) {
       head = 78;
     }
   }
+
+  free(state_machine);
 }
