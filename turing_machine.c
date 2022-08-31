@@ -18,7 +18,7 @@ typedef struct state {
   char next_state[16];
 } state;
 
-state *read_json(char *filename, int *len, int *max_iterations, char *tape) {
+state *read_json(char *filename, int *len, int *max_iterations, int *start_offset, char *tape) {
   FILE *f = fopen(filename, "rb");
   if (!f) {
     perror("fopen");
@@ -59,6 +59,11 @@ state *read_json(char *filename, int *len, int *max_iterations, char *tape) {
   const cJSON *mi = cJSON_GetObjectItemCaseSensitive(cjson, "max_iterations");
   if (mi && cJSON_IsNumber(mi)) {
     (*max_iterations) = mi->valueint;
+  }
+
+  const cJSON *so = cJSON_GetObjectItemCaseSensitive(cjson, "start_offset");
+  if (so && cJSON_IsNumber(so)) {
+    (*start_offset) = so->valueint;
   }
 
   state *s;
@@ -154,20 +159,26 @@ int main(int argc, char *argv[]) {
   char tape[80];
   memset(tape, ' ', 80);
   tape[79] = 0;
-  int head = 0;
 
-  state *state_machine;
+  state *state_machine = NULL;
   int state_machine_len = 0;
   int max_iterations = 0;
+  int start_offset = 0;
   if (optind < argc) {
     int i = optind;
     while (i < argc) {
-      fprintf(stdout, "Got additional argument: %s\n", argv[i]);
-      state_machine = read_json(argv[i], &state_machine_len, &max_iterations, tape);
+      state_machine = read_json(argv[i], &state_machine_len, &max_iterations, &start_offset, tape);
       i++;
+      break;
     }
   }
 
+  if (!state_machine) {
+    fprintf(stderr, "No state machine selected.\n");
+    usage(argv);
+  }
+
+  int head = start_offset;
   int sequence = 0;
   char instruction[16];
   strcpy(instruction, "A");
