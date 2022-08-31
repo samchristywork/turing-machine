@@ -101,22 +101,27 @@ state *read_json(char *filename, int *len, int *max_iterations, int *start_offse
               s[i].direction = NOP;
               break;
             default:
-              fprintf(stderr, "Something went wrong.\n");
+              fprintf(stderr, "Invalid direction: \"%c\".\n", direction->valuestring[0]);
+              exit(EXIT_FAILURE);
             }
 
             strcpy(s[i].next_state, next_state->valuestring);
           } else {
-            fprintf(stderr, "Something went wrong.\n");
+            fprintf(stderr, "State names must have fewer than 16 characters.\n");
+            exit(EXIT_FAILURE);
           }
         } else {
-          fprintf(stderr, "Something went wrong.\n");
+          fprintf(stderr, "Not all required fields have been specified.\n");
+          exit(EXIT_FAILURE);
         }
       } else {
-        fprintf(stderr, "Something went wrong.\n");
+        fprintf(stderr, "State could not be retrieved.\n");
+        exit(EXIT_FAILURE);
       }
     }
   } else {
     printf("\"states\" could not be found.\n");
+    exit(EXIT_FAILURE);
   }
   cJSON_Delete(cjson);
   return s;
@@ -204,7 +209,7 @@ int main(int argc, char *argv[]) {
     }
     if (!found_state) {
       fprintf(stderr, "Error\n");
-      break;
+      exit(EXIT_FAILURE);
     }
     if (head > 78) {
       head = 0;
