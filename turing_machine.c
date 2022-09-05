@@ -130,6 +130,7 @@ state *read_json(char *filename, int *len, int *max_iterations, int *start_offse
 void usage(char *argv[]) {
   fprintf(stderr,
           "Usage: %s [file]\n"
+          " -g,--graph     Create a graphviz diagram of the input state machine.\n"
           " -h,--help      Print this usage message.\n"
           " -v,--verbose   Display additional logging information.\n"
           "",
@@ -144,14 +145,17 @@ int main(int argc, char *argv[]) {
 
   int opt;
   int option_index = 0;
-  char *optstring = "hv";
+  char *optstring = "ghv";
   static struct option long_options[] = {
+      {"graph", no_argument, 0, 'g'},
       {"help", no_argument, 0, 'h'},
       {"verbose", no_argument, 0, 'v'},
       {0, 0, 0, 0},
   };
   while ((opt = getopt_long(argc, argv, optstring, long_options, &option_index)) != -1) {
-    if (opt == 'h') {
+    if (opt == 'g') {
+      graph = 1;
+    } else if (opt == 'h') {
       usage(argv);
     } else if (opt == 'v') {
       verbose = 1;
