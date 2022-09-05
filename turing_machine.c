@@ -140,6 +140,7 @@ void usage(char *argv[]) {
 int main(int argc, char *argv[]) {
 
   int verbose = 0;
+  int graph = 0;
 
   int opt;
   int option_index = 0;
@@ -181,6 +182,33 @@ int main(int argc, char *argv[]) {
   if (!state_machine) {
     fprintf(stderr, "No state machine selected.\n");
     usage(argv);
+  }
+
+  if (graph) {
+    fprintf(stdout, "strict digraph {\n");
+    for (int i = 0; i < state_machine_len; i++) {
+      fprintf(stdout, "  %s [shape=record; label=\"%s|{<0>0|<1>1}\"];\n", state_machine[i].state, state_machine[i].state);
+    }
+
+    for (int i = 0; i < state_machine_len; i++) {
+      if (state_machine[i].tape_symbol == ' ') {
+        state_machine[i].tape_symbol = '0';
+      }
+      if (state_machine[i].direction == R) {
+        state_machine[i].direction = 'R';
+      }
+      if (state_machine[i].direction == L) {
+        state_machine[i].direction = 'L';
+      }
+      fprintf(stdout, "  %s:%c -> %s [label=\"%c%c\"];\n",
+              state_machine[i].state,
+              state_machine[i].tape_symbol,
+              state_machine[i].next_state,
+              state_machine[i].direction,
+              state_machine[i].write_symbol);
+    }
+    fprintf(stdout, "}\n");
+    exit(EXIT_SUCCESS);
   }
 
   int head = start_offset;
