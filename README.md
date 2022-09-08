@@ -2,6 +2,13 @@
 
 ## Overview
 
+You can find an explanation of what a Turing machine is [on
+Wikipedia](https://en.wikipedia.org/wiki/Turing_machine). This program takes a
+description of a Turing machine as a JSON file, and runs it, printing out the
+state of the machine at each step and continuing until some condition has been
+reached, such as an error state, a halting state, or a set number of steps have
+been reached.
+
 ## Example
 
 ## Usage
