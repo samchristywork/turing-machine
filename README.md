@@ -59,6 +59,10 @@ Usage: turing_machine [file]
 
 ## Dependencies
 
+There are no dependencies for this repository besides a C compiler, and possibly
+Make, however, you probably want Graphviz installed if you want to produce a
+state machine graph.
+
 ## License
 
 This work is licensed under the GNU General Public License version 3 (GPLv3).
