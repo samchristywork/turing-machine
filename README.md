@@ -48,6 +48,15 @@ The input file looks like this:
 
 ## Usage
 
+Here is a synopsis of how to use the program:
+
+```
+Usage: turing_machine [file]
+ -g,--graph     Create a graphviz diagram of the input state machine.
+ -h,--help      Print this usage message.
+ -v,--verbose   Display additional logging information.
+```
+
 ## Dependencies
 
 ## License
