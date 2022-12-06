@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "version.h"
+
 enum direction {
   NOP = 0,
   L = -1,
@@ -127,12 +129,17 @@ state *read_json(char *filename, int *len, int *max_iterations, int *start_offse
   return s;
 }
 
+void print_version() {
+  printf("%s\n\n%s\n", VERSION_STRING, LICENSE_STRING);
+}
+
 void usage(char *argv[]) {
   fprintf(stderr,
-          "Usage: %s [file]\n"
+          "Usage: %s file\n"
           " -g,--graph     Create a graphviz diagram of the input state machine.\n"
           " -h,--help      Print this usage message.\n"
           " -v,--verbose   Display additional logging information.\n"
+          " -V,--version   Display the software version and exit.\n"
           "",
           argv[0]);
   exit(EXIT_FAILURE);
@@ -145,11 +152,12 @@ int main(int argc, char *argv[]) {
 
   int opt;
   int option_index = 0;
-  char *optstring = "ghv";
+  char *optstring = "ghvV";
   static struct option long_options[] = {
       {"graph", no_argument, 0, 'g'},
       {"help", no_argument, 0, 'h'},
       {"verbose", no_argument, 0, 'v'},
+      {"version", no_argument, 0, 'V'},
       {0, 0, 0, 0},
   };
   while ((opt = getopt_long(argc, argv, optstring, long_options, &option_index)) != -1) {
@@ -159,6 +167,9 @@ int main(int argc, char *argv[]) {
       usage(argv);
     } else if (opt == 'v') {
       verbose = 1;
+    } else if (opt == 'V') {
+      print_version();
+      exit(EXIT_SUCCESS);
     } else if (opt == '?') {
       usage(argv);
     } else {
