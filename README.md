@@ -9,7 +9,18 @@ state of the machine at each step and continuing until some condition has been
 reached, such as an error state, a halting state, or a set number of steps have
 been reached.
 
-## Example
+## Features
+
+- Finite-space simulation of a Turing Machine
+- Output state diagram in the GraphViz Dot language
+- JSON input files
+- Included sample input
+- Ability to specify initial state information in input file
+- A special `HALT` state for simulation termination
+- Utilizes the cJSON library to process input files
+- Familiar user interface based on other Linux programs
+
+## Examples
 
 Here is an example of the program running a "busy beaver" example. Here is the
 output when I run `turing_machine sample/busy_beaver.json`:
