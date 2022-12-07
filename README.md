@@ -22,8 +22,12 @@ been reached.
 
 ## Examples
 
-Here is an example of the program running a "busy beaver" example. Here is the
-output when I run `turing_machine sample/busy_beaver.json`:
+### Busy Beaver
+
+<img src="./res/busy_beaver.png" width="500" />
+
+This is the traditional "busy beaver" program. The head (signified with an 'h')
+moves left and right on the tape, populating each space it covers with a '1'.
 
 ```
 |                   h                 | A
@@ -53,6 +57,79 @@ The input file looks like this:
     {"state": "B", "tape_symbol": "1", "write_symbol": "1", "direction": "R", "next_state": "B"},
     {"state": "C", "tape_symbol": " ", "write_symbol": "1", "direction": "L", "next_state": "B"},
     {"state": "C", "tape_symbol": "1", "write_symbol": "1", "direction": "R", "next_state": "HALT"}
+  ]
+}
+```
+
+### Divisible by 3
+
+<img src="./res/divisible_by_3.png" width="500" />
+
+This example shows a machine that takes a number as the initial state and
+replies whether the number is divisible by 3 or not. The input number in this
+case is 39847239813, and is divisible by 3, so the final state is
+`IS_DIVISIBLE`.
+
+```
+|h0100101000111000101001010000010000101                                         | A
+|0h100101000111000101001010000010000101                                         | A
+|00h00101000111000101001010000010000101                                         | A
+|001h0101000111000101001010000010000101                                         | B
+|0010h101000111000101001010000010000101                                         | C
+|00100h01000111000101001010000010000101                                         | B
+|001001h1000111000101001010000010000101                                         | A
+|0010010h000111000101001010000010000101                                         | A
+|00100101h00111000101001010000010000101                                         | B
+|001001010h0111000101001010000010000101                                         | C
+|0010010100h111000101001010000010000101                                         | B
+|00100101000h11000101001010000010000101                                         | C
+|001001010001h1000101001010000010000101                                         | C
+|0010010100011h000101001010000010000101                                         | C
+|00100101000111h00101001010000010000101                                         | C
+|001001010001110h0101001010000010000101                                         | B
+|0010010100011100h101001010000010000101                                         | C
+|00100101000111000h01001010000010000101                                         | B
+|001001010001110001h1001010000010000101                                         | A
+|0010010100011100010h001010000010000101                                         | A
+|00100101000111000101h01010000010000101                                         | B
+|001001010001110001010h1010000010000101                                         | C
+|0010010100011100010100h010000010000101                                         | B
+|00100101000111000101001h10000010000101                                         | A
+|001001010001110001010010h0000010000101                                         | A
+|0010010100011100010100101h000010000101                                         | B
+|00100101000111000101001010h00010000101                                         | C
+|001001010001110001010010100h0010000101                                         | B
+|0010010100011100010100101000h010000101                                         | C
+|00100101000111000101001010000h10000101                                         | B
+|001001010001110001010010100000h0000101                                         | C
+|0010010100011100010100101000001h000101                                         | C
+|00100101000111000101001010000010h00101                                         | B
+|001001010001110001010010100000100h0101                                         | C
+|0010010100011100010100101000001000h101                                         | B
+|00100101000111000101001010000010000h01                                         | C
+|001001010001110001010010100000100001h1                                         | C
+|0010010100011100010100101000001000010h                                         | B
+|00100101000111000101001010000010000101h                                        | A
+|00100101000111000101001010000010000101h                                        | IS_DIVISIBLE
+```
+
+The input file for this machine looks like this:
+
+```json
+{
+  "initial_tape": "00100101000111000101001010000010000101",
+  "states": [
+    {"state": "A", "tape_symbol": "0", "write_symbol": "0", "direction": "R", "next_state": "A"},
+    {"state": "A", "tape_symbol": "1", "write_symbol": "1", "direction": "R", "next_state": "B"},
+    {"state": "B", "tape_symbol": "0", "write_symbol": "0", "direction": "R", "next_state": "C"},
+    {"state": "B", "tape_symbol": "1", "write_symbol": "1", "direction": "R", "next_state": "A"},
+    {"state": "C", "tape_symbol": "0", "write_symbol": "0", "direction": "R", "next_state": "B"},
+    {"state": "C", "tape_symbol": "1", "write_symbol": "1", "direction": "R", "next_state": "C"},
+    {"state": "A", "tape_symbol": " ", "write_symbol": " ", "direction": "N", "next_state": "IS_DIVISIBLE"},
+    {"state": "B", "tape_symbol": " ", "write_symbol": " ", "direction": "N", "next_state": "ISNT_DIVISIBLE"},
+    {"state": "C", "tape_symbol": " ", "write_symbol": " ", "direction": "N", "next_state": "ISNT_DIVISIBLE"},
+    {"state": "IS_DIVISIBLE", "tape_symbol": " ", "write_symbol": " ", "direction": "N", "next_state": "HALT"},
+    {"state": "ISNT_DIVISIBLE", "tape_symbol": " ", "write_symbol": " ", "direction": "N", "next_state": "HALT"}
   ]
 }
 ```
