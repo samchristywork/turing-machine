@@ -24,7 +24,9 @@ been reached.
 
 ### Busy Beaver
 
-<img src="./res/busy_beaver.png" width="500" />
+<p align="center">
+  <img src="./res/busy_beaver.svg" width="500" />
+</p>
 
 This is the traditional "busy beaver" program. The head (signified with an 'h')
 moves left and right on the tape, populating each space it covers with a '1'.
@@ -63,7 +65,9 @@ The input file looks like this:
 
 ### Divisible by 3
 
-<img src="./res/divisible_by_3.png" width="500" />
+<p align="center">
+  <img src="./res/divisible_by_3.svg" width="500" />
+</p>
 
 This example shows a machine that takes a number as the initial state and
 replies whether the number is divisible by 3 or not. The input number in this
