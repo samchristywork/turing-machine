@@ -1,4 +1,4 @@
-![Banner](https://s-christy.com/status-banner-service/turing-machine/banner-slim.svg)
+![Banner](https://s-christy.com/sbs/status-banner.svg?icon=communication/hub&hue=150&title=Turing%20Machine&description=A%20demonstration%20of%20the%20classic%20Turing%20Machine)
 
 ## Overview
 
