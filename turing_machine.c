@@ -232,9 +232,8 @@ int main(int argc, char *argv[]) {
   strcpy(instruction, "A");
 
   for (sequence = 0; strcmp(instruction, "HALT") != 0 && (sequence < max_iterations || max_iterations == 0); sequence++) {
-    char tape_string[79];
-    memcpy(tape_string, tape, 79);
-    tape_string[79] = 0;
+    char tape_string[80];
+    strcpy(tape_string, tape);
     tape_string[head] = 'h';
     printf("|%s| %s\n", tape_string, instruction);
 
