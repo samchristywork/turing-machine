@@ -156,7 +156,7 @@ void print_version() {
 
 void usage(char *argv[]) {
   fprintf(stderr,
-          "Usage: %s file\n"
+          "Usage: %s [file...]\n"
           " -g,--graph     Create a graphviz diagram of the input state machine.\n"
           " -h,--help      Print this usage message.\n"
           " -v,--verbose   Display additional logging information.\n"
@@ -198,174 +198,178 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  tape_t tape;
-  tape.len = 80;
-  tape.data = malloc(tape.len + 1);
-  if (!tape.data) {
-    perror("malloc");
-    exit(EXIT_FAILURE);
-  }
-  memset(tape.data, ' ', tape.len);
-  tape.data[tape.len] = '\0';
-
-  state *state_machine = NULL;
-  int state_machine_len = 0;
-  int max_iterations = 0;
-  int start_offset = 0;
-  if (optind < argc) {
-    int i = optind;
-    while (i < argc) {
-      state_machine = read_json(argv[i], &state_machine_len, &max_iterations, &start_offset, &tape);
-      i++;
-      break;
-    }
-  }
-
-  if (!state_machine) {
+  if (optind >= argc) {
     fprintf(stderr, "No state machine selected.\n");
     usage(argv);
   }
 
-  if (graph) {
-    fprintf(stdout, "strict digraph {\n");
-    fprintf(stdout, "  rankdir=LR;\n");
-    fprintf(stdout, "  node [shape=record];\n");
-
-    // Print nodes with dynamic record labels
-    for (int i = 0; i < state_machine_len; i++) {
-      // Only process each unique state once
-      int already_processed = 0;
-      for (int j = 0; j < i; j++) {
-        if (strcmp(state_machine[i].state, state_machine[j].state) == 0) {
-          already_processed = 1;
-          break;
-        }
-      }
-      if (already_processed) {
-        continue;
-      }
-
-      fprintf(stdout, "  %s [label=\"%s|{", state_machine[i].state, state_machine[i].state);
-
-      // Collect unique symbols for this state
-      char symbols[256];
-      int symbol_count = 0;
-      for (int j = 0; j < state_machine_len; j++) {
-        if (strcmp(state_machine[i].state, state_machine[j].state) == 0) {
-          char s = state_machine[j].tape_symbol;
-          int exists = 0;
-          for (int k = 0; k < symbol_count; k++) {
-            if (symbols[k] == s) {
-              exists = 1;
-              break;
-            }
-          }
-          if (!exists) {
-            symbols[symbol_count++] = s;
-          }
-        }
-      }
-
-      for (int j = 0; j < symbol_count; j++) {
-        char s = symbols[j];
-        if (j > 0) {
-          fprintf(stdout, "|");
-        }
-        if (s == ' ') {
-          fprintf(stdout, "<space>blank");
-        } else {
-          fprintf(stdout, "<%c>%c", s, s);
-        }
-      }
-      fprintf(stdout, "}\"];\n");
-    }
-
-    // Print edges
-    for (int i = 0; i < state_machine_len; i++) {
-      char port[16];
-      if (state_machine[i].tape_symbol == ' ') {
-        strcpy(port, "space");
-      } else {
-        sprintf(port, "%c", state_machine[i].tape_symbol);
-      }
-
-      char dir_char = 'N';
-      if (state_machine[i].direction == R) {
-        dir_char = 'R';
-      } else if (state_machine[i].direction == L) {
-        dir_char = 'L';
-      }
-
-      fprintf(stdout, "  %s:%s -> %s [label=\"%c, %c\"];\n",
-              state_machine[i].state,
-              port,
-              state_machine[i].next_state,
-              dir_char,
-              state_machine[i].write_symbol);
-    }
-    fprintf(stdout, "}\n");
-    free(tape.data);
-    free(state_machine);
-    exit(EXIT_SUCCESS);
-  }
-
-  int head = start_offset;
-  int sequence = 0;
-  char instruction[16];
-  strcpy(instruction, "A");
-
-  for (sequence = 0; strcmp(instruction, "HALT") != 0 && (sequence < max_iterations || max_iterations == 0); sequence++) {
-    char *tape_string = malloc(tape.len + 1);
-    if (!tape_string) {
+  for (int arg_idx = optind; arg_idx < argc; arg_idx++) {
+    tape_t tape;
+    tape.len = 80;
+    tape.data = malloc(tape.len + 1);
+    if (!tape.data) {
       perror("malloc");
       exit(EXIT_FAILURE);
     }
-    strcpy(tape_string, tape.data);
-    tape_string[head] = 'h';
-    printf("|%s| %s\n", tape_string, instruction);
-    free(tape_string);
+    memset(tape.data, ' ', tape.len);
+    tape.data[tape.len] = '\0';
 
-    int found_state = 0;
-    for (int i = 0; i < state_machine_len; i++) {
-      if (strcmp(instruction, state_machine[i].state) == 0) {
-        if (tape.data[head] == state_machine[i].tape_symbol) {
-          found_state = 1;
-          tape.data[head] = state_machine[i].write_symbol;
-          head += state_machine[i].direction;
-          strcpy(instruction, state_machine[i].next_state);
-          break;
+    state *state_machine = NULL;
+    int state_machine_len = 0;
+    int max_iterations = 0;
+    int start_offset = 0;
+
+    state_machine = read_json(argv[arg_idx], &state_machine_len, &max_iterations, &start_offset, &tape);
+
+    if (!state_machine) {
+      fprintf(stderr, "Could not load state machine from %s.\n", argv[arg_idx]);
+      free(tape.data);
+      continue;
+    }
+
+    if (graph) {
+      fprintf(stdout, "strict digraph {\n");
+      fprintf(stdout, "  rankdir=LR;\n");
+      fprintf(stdout, "  node [shape=record];\n");
+
+      // Print nodes with dynamic record labels
+      for (int i = 0; i < state_machine_len; i++) {
+        // Only process each unique state once
+        int already_processed = 0;
+        for (int j = 0; j < i; j++) {
+          if (strcmp(state_machine[i].state, state_machine[j].state) == 0) {
+            already_processed = 1;
+            break;
+          }
+        }
+        if (already_processed) {
+          continue;
+        }
+
+        fprintf(stdout, "  %s [label=\"%s|{", state_machine[i].state, state_machine[i].state);
+
+        // Collect unique symbols for this state
+        char symbols[256];
+        int symbol_count = 0;
+        for (int j = 0; j < state_machine_len; j++) {
+          if (strcmp(state_machine[i].state, state_machine[j].state) == 0) {
+            char s = state_machine[j].tape_symbol;
+            int exists = 0;
+            for (int k = 0; k < symbol_count; k++) {
+              if (symbols[k] == s) {
+                exists = 1;
+                break;
+              }
+            }
+            if (!exists) {
+              symbols[symbol_count++] = s;
+            }
+          }
+        }
+
+        for (int j = 0; j < symbol_count; j++) {
+          char s = symbols[j];
+          if (j > 0) {
+            fprintf(stdout, "|");
+          }
+          if (s == ' ') {
+            fprintf(stdout, "<space>blank");
+          } else {
+            fprintf(stdout, "<%c>%c", s, s);
+          }
+        }
+        fprintf(stdout, "}\"];\n");
+      }
+
+      // Print edges
+      for (int i = 0; i < state_machine_len; i++) {
+        char port[16];
+        if (state_machine[i].tape_symbol == ' ') {
+          strcpy(port, "space");
+        } else {
+          sprintf(port, "%c", state_machine[i].tape_symbol);
+        }
+
+        char dir_char = 'N';
+        if (state_machine[i].direction == R) {
+          dir_char = 'R';
+        } else if (state_machine[i].direction == L) {
+          dir_char = 'L';
+        }
+
+        fprintf(stdout, "  %s:%s -> %s [label=\"%c, %c\"];\n",
+                state_machine[i].state,
+                port,
+                state_machine[i].next_state,
+                dir_char,
+                state_machine[i].write_symbol);
+      }
+      fprintf(stdout, "}\n");
+      free(tape.data);
+      free(state_machine);
+      continue;
+    }
+
+    int head = start_offset;
+    int sequence = 0;
+    char instruction[16];
+    strcpy(instruction, "A");
+
+    for (sequence = 0; strcmp(instruction, "HALT") != 0 && (sequence < max_iterations || max_iterations == 0); sequence++) {
+      char *tape_string = malloc(tape.len + 1);
+      if (!tape_string) {
+        perror("malloc");
+        exit(EXIT_FAILURE);
+      }
+      strcpy(tape_string, tape.data);
+      tape_string[head] = 'h';
+      printf("|%s| %s\n", tape_string, instruction);
+      free(tape_string);
+
+      int found_state = 0;
+      for (int i = 0; i < state_machine_len; i++) {
+        if (strcmp(instruction, state_machine[i].state) == 0) {
+          if (tape.data[head] == state_machine[i].tape_symbol) {
+            found_state = 1;
+            tape.data[head] = state_machine[i].write_symbol;
+            head += state_machine[i].direction;
+            strcpy(instruction, state_machine[i].next_state);
+            break;
+          }
         }
       }
-    }
-    if (!found_state) {
-      fprintf(stderr, "Error\n");
-      exit(EXIT_FAILURE);
+      if (!found_state) {
+        fprintf(stderr, "Error: No transition found for state \"%s\" and symbol \"%c\".\n", instruction, tape.data[head]);
+        break;
+      }
+
+      if (head < 0) {
+        int increment = 80;
+        tape.data = realloc(tape.data, tape.len + increment + 1);
+        if (!tape.data) {
+          perror("realloc");
+          exit(EXIT_FAILURE);
+        }
+        memmove(tape.data + increment, tape.data, tape.len + 1);
+        memset(tape.data, ' ', increment);
+        head += increment;
+        tape.len += increment;
+      } else if (head >= tape.len) {
+        int increment = 80;
+        tape.data = realloc(tape.data, tape.len + increment + 1);
+        if (!tape.data) {
+          perror("realloc");
+          exit(EXIT_FAILURE);
+        }
+        memset(tape.data + tape.len, ' ', increment);
+        tape.len += increment;
+        tape.data[tape.len] = '\0';
+      }
     }
 
-    if (head < 0) {
-      int increment = 80;
-      tape.data = realloc(tape.data, tape.len + increment + 1);
-      if (!tape.data) {
-        perror("realloc");
-        exit(EXIT_FAILURE);
-      }
-      memmove(tape.data + increment, tape.data, tape.len + 1);
-      memset(tape.data, ' ', increment);
-      head += increment;
-      tape.len += increment;
-    } else if (head >= tape.len) {
-      int increment = 80;
-      tape.data = realloc(tape.data, tape.len + increment + 1);
-      if (!tape.data) {
-        perror("realloc");
-        exit(EXIT_FAILURE);
-      }
-      memset(tape.data + tape.len, ' ', increment);
-      tape.len += increment;
-      tape.data[tape.len] = '\0';
-    }
+    free(tape.data);
+    free(state_machine);
   }
 
-  free(tape.data);
-  free(state_machine);
+  return EXIT_SUCCESS;
 }
