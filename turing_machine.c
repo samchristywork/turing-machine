@@ -228,25 +228,77 @@ int main(int argc, char *argv[]) {
 
   if (graph) {
     fprintf(stdout, "strict digraph {\n");
+    fprintf(stdout, "  rankdir=LR;\n");
+    fprintf(stdout, "  node [shape=record];\n");
+
+    // Print nodes with dynamic record labels
     for (int i = 0; i < state_machine_len; i++) {
-      fprintf(stdout, "  %s [shape=record; label=\"%s|{<0>0|<1>1}\"];\n", state_machine[i].state, state_machine[i].state);
+      // Only process each unique state once
+      int already_processed = 0;
+      for (int j = 0; j < i; j++) {
+        if (strcmp(state_machine[i].state, state_machine[j].state) == 0) {
+          already_processed = 1;
+          break;
+        }
+      }
+      if (already_processed) {
+        continue;
+      }
+
+      fprintf(stdout, "  %s [label=\"%s|{", state_machine[i].state, state_machine[i].state);
+
+      // Collect unique symbols for this state
+      char symbols[256];
+      int symbol_count = 0;
+      for (int j = 0; j < state_machine_len; j++) {
+        if (strcmp(state_machine[i].state, state_machine[j].state) == 0) {
+          char s = state_machine[j].tape_symbol;
+          int exists = 0;
+          for (int k = 0; k < symbol_count; k++) {
+            if (symbols[k] == s) {
+              exists = 1;
+              break;
+            }
+          }
+          if (!exists) {
+            symbols[symbol_count++] = s;
+          }
+        }
+      }
+
+      for (int j = 0; j < symbol_count; j++) {
+        char s = symbols[j];
+        if (j > 0) {
+          fprintf(stdout, "|");
+        }
+        if (s == ' ') {
+          fprintf(stdout, "<space>blank");
+        } else {
+          fprintf(stdout, "<%c>%c", s, s);
+        }
+      }
+      fprintf(stdout, "}\"];\n");
     }
 
+    // Print edges
     for (int i = 0; i < state_machine_len; i++) {
-      char tape_symbol = state_machine[i].tape_symbol;
-      if (tape_symbol == ' ') {
-        tape_symbol = '0';
+      char port[16];
+      if (state_machine[i].tape_symbol == ' ') {
+        strcpy(port, "space");
+      } else {
+        sprintf(port, "%c", state_machine[i].tape_symbol);
       }
-      int direction = state_machine[i].direction;
+
       char dir_char = 'N';
-      if (direction == R) {
+      if (state_machine[i].direction == R) {
         dir_char = 'R';
-      } else if (direction == L) {
+      } else if (state_machine[i].direction == L) {
         dir_char = 'L';
       }
-      fprintf(stdout, "  %s:%c -> %s [label=\"%c%c\"];\n",
+
+      fprintf(stdout, "  %s:%s -> %s [label=\"%c, %c\"];\n",
               state_machine[i].state,
-              tape_symbol,
+              port,
               state_machine[i].next_state,
               dir_char,
               state_machine[i].write_symbol);
