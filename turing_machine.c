@@ -20,7 +20,12 @@ typedef struct state {
   char next_state[16];
 } state;
 
-state *read_json(char *filename, int *len, int *max_iterations, int *start_offset, char *tape) {
+typedef struct tape_t {
+  char *data;
+  size_t len;
+} tape_t;
+
+state *read_json(char *filename, int *len, int *max_iterations, int *start_offset, tape_t *tape) {
   FILE *f = fopen(filename, "rb");
   if (!f) {
     perror("fopen");
@@ -31,30 +36,46 @@ state *read_json(char *filename, int *len, int *max_iterations, int *start_offse
   int size = ftell(f);
   rewind(f);
 
-  char buffer[size + 1];
+  char *buffer = malloc(size + 1);
+  if (!buffer) {
+    perror("malloc");
+    exit(EXIT_FAILURE);
+  }
   buffer[size] = 0;
   int ret = fread(buffer, 1, size, f);
   if (ret != size) {
     fprintf(stderr, "Could not read the expected number of bytes.\n");
+    free(buffer);
     exit(EXIT_FAILURE);
   }
 
   fclose(f);
 
   cJSON *cjson = cJSON_Parse(buffer);
+  free(buffer);
   if (!cjson) {
     const char *error_ptr = cJSON_GetErrorPtr();
     if (error_ptr) {
       fprintf(stderr, "Error before: %s\n", error_ptr);
     }
-    cJSON_Delete(cjson);
     exit(EXIT_FAILURE);
   }
 
   const cJSON *initial_tape = cJSON_GetObjectItemCaseSensitive(cjson, "initial_tape");
   if (initial_tape && cJSON_IsString(initial_tape)) {
-    for (int i = 0; i < strlen(initial_tape->valuestring); i++) {
-      tape[i] = initial_tape->valuestring[i];
+    size_t new_len = strlen(initial_tape->valuestring);
+    if (new_len > tape->len) {
+      tape->data = realloc(tape->data, new_len + 1);
+      if (!tape->data) {
+        perror("realloc");
+        exit(EXIT_FAILURE);
+      }
+      tape->len = new_len;
+    }
+    memset(tape->data, ' ', tape->len);
+    tape->data[tape->len] = '\0';
+    for (int i = 0; i < new_len; i++) {
+      tape->data[i] = initial_tape->valuestring[i];
     }
   }
 
@@ -177,9 +198,15 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  char tape[80];
-  memset(tape, ' ', 80);
-  tape[79] = 0;
+  tape_t tape;
+  tape.len = 80;
+  tape.data = malloc(tape.len + 1);
+  if (!tape.data) {
+    perror("malloc");
+    exit(EXIT_FAILURE);
+  }
+  memset(tape.data, ' ', tape.len);
+  tape.data[tape.len] = '\0';
 
   state *state_machine = NULL;
   int state_machine_len = 0;
@@ -188,7 +215,7 @@ int main(int argc, char *argv[]) {
   if (optind < argc) {
     int i = optind;
     while (i < argc) {
-      state_machine = read_json(argv[i], &state_machine_len, &max_iterations, &start_offset, tape);
+      state_machine = read_json(argv[i], &state_machine_len, &max_iterations, &start_offset, &tape);
       i++;
       break;
     }
@@ -206,23 +233,27 @@ int main(int argc, char *argv[]) {
     }
 
     for (int i = 0; i < state_machine_len; i++) {
-      if (state_machine[i].tape_symbol == ' ') {
-        state_machine[i].tape_symbol = '0';
+      char tape_symbol = state_machine[i].tape_symbol;
+      if (tape_symbol == ' ') {
+        tape_symbol = '0';
       }
-      if (state_machine[i].direction == R) {
-        state_machine[i].direction = 'R';
-      }
-      if (state_machine[i].direction == L) {
-        state_machine[i].direction = 'L';
+      int direction = state_machine[i].direction;
+      char dir_char = 'N';
+      if (direction == R) {
+        dir_char = 'R';
+      } else if (direction == L) {
+        dir_char = 'L';
       }
       fprintf(stdout, "  %s:%c -> %s [label=\"%c%c\"];\n",
               state_machine[i].state,
-              state_machine[i].tape_symbol,
+              tape_symbol,
               state_machine[i].next_state,
-              state_machine[i].direction,
+              dir_char,
               state_machine[i].write_symbol);
     }
     fprintf(stdout, "}\n");
+    free(tape.data);
+    free(state_machine);
     exit(EXIT_SUCCESS);
   }
 
@@ -232,17 +263,22 @@ int main(int argc, char *argv[]) {
   strcpy(instruction, "A");
 
   for (sequence = 0; strcmp(instruction, "HALT") != 0 && (sequence < max_iterations || max_iterations == 0); sequence++) {
-    char tape_string[80];
-    strcpy(tape_string, tape);
+    char *tape_string = malloc(tape.len + 1);
+    if (!tape_string) {
+      perror("malloc");
+      exit(EXIT_FAILURE);
+    }
+    strcpy(tape_string, tape.data);
     tape_string[head] = 'h';
     printf("|%s| %s\n", tape_string, instruction);
+    free(tape_string);
 
     int found_state = 0;
     for (int i = 0; i < state_machine_len; i++) {
       if (strcmp(instruction, state_machine[i].state) == 0) {
-        if (tape[head] == state_machine[i].tape_symbol) {
+        if (tape.data[head] == state_machine[i].tape_symbol) {
           found_state = 1;
-          tape[head] = state_machine[i].write_symbol;
+          tape.data[head] = state_machine[i].write_symbol;
           head += state_machine[i].direction;
           strcpy(instruction, state_machine[i].next_state);
           break;
@@ -253,13 +289,31 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "Error\n");
       exit(EXIT_FAILURE);
     }
-    if (head > 78) {
-      head = 0;
-    }
+
     if (head < 0) {
-      head = 78;
+      int increment = 80;
+      tape.data = realloc(tape.data, tape.len + increment + 1);
+      if (!tape.data) {
+        perror("realloc");
+        exit(EXIT_FAILURE);
+      }
+      memmove(tape.data + increment, tape.data, tape.len + 1);
+      memset(tape.data, ' ', increment);
+      head += increment;
+      tape.len += increment;
+    } else if (head >= tape.len) {
+      int increment = 80;
+      tape.data = realloc(tape.data, tape.len + increment + 1);
+      if (!tape.data) {
+        perror("realloc");
+        exit(EXIT_FAILURE);
+      }
+      memset(tape.data + tape.len, ' ', increment);
+      tape.len += increment;
+      tape.data[tape.len] = '\0';
     }
   }
 
+  free(tape.data);
   free(state_machine);
 }
