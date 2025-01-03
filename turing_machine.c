@@ -341,15 +341,15 @@ int main(int argc, char *argv[]) {
     strcpy(instruction, start_state);
 
     for (sequence = 0; strcmp(instruction, "HALT") != 0 && (sequence < max_iterations || max_iterations == 0); sequence++) {
-      char *tape_string = malloc(tape.len + 1);
-      if (!tape_string) {
-        perror("malloc");
-        exit(EXIT_FAILURE);
+      printf("|");
+      for (int i = 0; i < tape.len; i++) {
+        if (i == head) {
+          printf("\x1b[7m%c\x1b[0m", tape.data[i]);
+        } else {
+          putchar(tape.data[i]);
+        }
       }
-      strcpy(tape_string, tape.data);
-      tape_string[head] = 'h';
-      printf("|%s| %s\n", tape_string, instruction);
-      free(tape_string);
+      printf("| %s\n", instruction);
 
       int found_state = 0;
       for (int i = 0; i < state_machine_len; i++) {
