@@ -130,7 +130,10 @@ state *read_json(char *filename, int *len, int *max_iterations, int *start_offse
         cJSON *direction = cJSON_GetObjectItemCaseSensitive(item, "direction");
         cJSON *next_state = cJSON_GetObjectItemCaseSensitive(item, "next_state");
 
-        if (state && tape_symbol && write_symbol && direction && next_state) {
+        if (cJSON_IsString(state) && cJSON_IsString(tape_symbol) &&
+            cJSON_IsString(write_symbol) && cJSON_IsString(direction) &&
+            cJSON_IsString(next_state)) {
+
           if (strlen(state->valuestring) < 16 && strlen(next_state->valuestring) < 16) {
 
             strcpy(s[i].state, state->valuestring);
