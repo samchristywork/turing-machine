@@ -6,6 +6,8 @@
 
 #include "version.h"
 
+int verbose = 0;
+
 enum direction {
   NOP = 0,
   L = -1,
@@ -77,22 +79,34 @@ state *read_json(char *filename, int *len, int *max_iterations, int *start_offse
     for (int i = 0; i < new_len; i++) {
       tape->data[i] = initial_tape->valuestring[i];
     }
+    if (verbose) {
+      fprintf(stderr, "Loaded initial tape of length %zu\n", new_len);
+    }
   }
 
   const cJSON *mi = cJSON_GetObjectItemCaseSensitive(cjson, "max_iterations");
   if (mi && cJSON_IsNumber(mi)) {
     (*max_iterations) = mi->valueint;
+    if (verbose) {
+      fprintf(stderr, "Set max iterations to %d\n", *max_iterations);
+    }
   }
 
   const cJSON *so = cJSON_GetObjectItemCaseSensitive(cjson, "start_offset");
   if (so && cJSON_IsNumber(so)) {
     (*start_offset) = so->valueint;
+    if (verbose) {
+      fprintf(stderr, "Set start offset to %d\n", *start_offset);
+    }
   }
 
   const cJSON *ss = cJSON_GetObjectItemCaseSensitive(cjson, "start_state");
   if (ss && cJSON_IsString(ss)) {
     if (strlen(ss->valuestring) < 16) {
       strcpy(start_state, ss->valuestring);
+      if (verbose) {
+        fprintf(stderr, "Set start state to \"%s\"\n", start_state);
+      }
     } else {
       fprintf(stderr, "Start state name must have fewer than 16 characters.\n");
       exit(EXIT_FAILURE);
@@ -178,7 +192,6 @@ void usage(char *argv[]) {
 
 int main(int argc, char *argv[]) {
 
-  int verbose = 0;
   int graph = 0;
 
   int opt;
@@ -357,6 +370,9 @@ int main(int argc, char *argv[]) {
 
       if (head < 0) {
         int increment = 80;
+        if (verbose) {
+          fprintf(stderr, "Expanding tape left by %d characters\n", increment);
+        }
         tape.data = realloc(tape.data, tape.len + increment + 1);
         if (!tape.data) {
           perror("realloc");
@@ -368,6 +384,9 @@ int main(int argc, char *argv[]) {
         tape.len += increment;
       } else if (head >= tape.len) {
         int increment = 80;
+        if (verbose) {
+          fprintf(stderr, "Expanding tape right by %d characters\n", increment);
+        }
         tape.data = realloc(tape.data, tape.len + increment + 1);
         if (!tape.data) {
           perror("realloc");
