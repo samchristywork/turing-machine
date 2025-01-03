@@ -1,0 +1,14 @@
+{
+  "start_state": "COUNT_5",
+  "states": [
+    {"state": "COUNT_3", "tape_symbol": " ", "write_symbol": "1", "direction": "R", "next_state": "C3_2"},
+    {"state": "C3_2", "tape_symbol": " ", "write_symbol": "2", "direction": "R", "next_state": "C3_3"},
+    {"state": "C3_3", "tape_symbol": " ", "write_symbol": "3", "direction": "N", "next_state": "HALT"},
+
+    {"state": "COUNT_5", "tape_symbol": " ", "write_symbol": "1", "direction": "R", "next_state": "C5_2"},
+    {"state": "C5_2", "tape_symbol": " ", "write_symbol": "2", "direction": "R", "next_state": "C5_3"},
+    {"state": "C5_3", "tape_symbol": " ", "write_symbol": "3", "direction": "R", "next_state": "C5_4"},
+    {"state": "C5_4", "tape_symbol": " ", "write_symbol": "4", "direction": "R", "next_state": "C5_5"},
+    {"state": "C5_5", "tape_symbol": " ", "write_symbol": "5", "direction": "N", "next_state": "HALT"}
+  ]
+}
