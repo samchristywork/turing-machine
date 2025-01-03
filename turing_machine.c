@@ -25,7 +25,7 @@ typedef struct tape_t {
   size_t len;
 } tape_t;
 
-state *read_json(char *filename, int *len, int *max_iterations, int *start_offset, tape_t *tape) {
+state *read_json(char *filename, int *len, int *max_iterations, int *start_offset, char *start_state, tape_t *tape) {
   FILE *f = fopen(filename, "rb");
   if (!f) {
     perror("fopen");
@@ -87,6 +87,16 @@ state *read_json(char *filename, int *len, int *max_iterations, int *start_offse
   const cJSON *so = cJSON_GetObjectItemCaseSensitive(cjson, "start_offset");
   if (so && cJSON_IsNumber(so)) {
     (*start_offset) = so->valueint;
+  }
+
+  const cJSON *ss = cJSON_GetObjectItemCaseSensitive(cjson, "start_state");
+  if (ss && cJSON_IsString(ss)) {
+    if (strlen(ss->valuestring) < 16) {
+      strcpy(start_state, ss->valuestring);
+    } else {
+      fprintf(stderr, "Start state name must have fewer than 16 characters.\n");
+      exit(EXIT_FAILURE);
+    }
   }
 
   state *s;
@@ -218,8 +228,10 @@ int main(int argc, char *argv[]) {
     int state_machine_len = 0;
     int max_iterations = 0;
     int start_offset = 0;
+    char start_state[16];
+    strcpy(start_state, "A");
 
-    state_machine = read_json(argv[arg_idx], &state_machine_len, &max_iterations, &start_offset, &tape);
+    state_machine = read_json(argv[arg_idx], &state_machine_len, &max_iterations, &start_offset, start_state, &tape);
 
     if (!state_machine) {
       fprintf(stderr, "Could not load state machine from %s.\n", argv[arg_idx]);
@@ -313,7 +325,7 @@ int main(int argc, char *argv[]) {
     int head = start_offset;
     int sequence = 0;
     char instruction[16];
-    strcpy(instruction, "A");
+    strcpy(instruction, start_state);
 
     for (sequence = 0; strcmp(instruction, "HALT") != 0 && (sequence < max_iterations || max_iterations == 0); sequence++) {
       char *tape_string = malloc(tape.len + 1);
