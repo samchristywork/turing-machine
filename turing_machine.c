@@ -198,6 +198,7 @@ void usage(char *argv[]) {
           "Usage: %s [file...]\n"
           " -g,--graph     Create a graphviz diagram of the input state machine.\n"
           " -h,--help      Print this usage message.\n"
+          " -s,--step      Step through the execution manually.\n"
           " -v,--verbose   Display additional logging information.\n"
           " -V,--version   Display the software version and exit.\n"
           "",
@@ -208,13 +209,15 @@ void usage(char *argv[]) {
 int main(int argc, char *argv[]) {
 
   int graph = 0;
+  int step = 0;
 
   int opt;
   int option_index = 0;
-  char *optstring = "ghvV";
+  char *optstring = "ghsvV";
   static struct option long_options[] = {
       {"graph", no_argument, 0, 'g'},
       {"help", no_argument, 0, 'h'},
+      {"step", no_argument, 0, 's'},
       {"verbose", no_argument, 0, 'v'},
       {"version", no_argument, 0, 'V'},
       {0, 0, 0, 0},
@@ -224,6 +227,8 @@ int main(int argc, char *argv[]) {
       graph = 1;
     } else if (opt == 'h') {
       usage(argv);
+    } else if (opt == 's') {
+      step = 1;
     } else if (opt == 'v') {
       verbose = 1;
     } else if (opt == 'V') {
@@ -370,6 +375,12 @@ int main(int argc, char *argv[]) {
         }
       }
       printf("| %s\n", instruction);
+
+      if (step) {
+        int c;
+        while ((c = getchar()) != '\n' && c != EOF);
+        printf("\x1b[A");
+      }
 
       int found_state = 0;
       for (int i = 0; i < state_machine_len; i++) {
