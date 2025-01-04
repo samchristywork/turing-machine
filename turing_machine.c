@@ -1,8 +1,10 @@
+#define _DEFAULT_SOURCE
 #include <cjson/cJSON.h>
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "version.h"
 
@@ -196,6 +198,7 @@ void print_version() {
 void usage(char *argv[]) {
   fprintf(stderr,
           "Usage: %s [file...]\n"
+          " -d,--delay     Set a delay in milliseconds between steps.\n"
           " -g,--graph     Create a graphviz diagram of the input state machine.\n"
           " -h,--help      Print this usage message.\n"
           " -s,--step      Step through the execution manually.\n"
@@ -210,11 +213,13 @@ int main(int argc, char *argv[]) {
 
   int graph = 0;
   int step = 0;
+  int delay = 0;
 
   int opt;
   int option_index = 0;
-  char *optstring = "ghsvV";
+  char *optstring = "d:ghsvV";
   static struct option long_options[] = {
+      {"delay", required_argument, 0, 'd'},
       {"graph", no_argument, 0, 'g'},
       {"help", no_argument, 0, 'h'},
       {"step", no_argument, 0, 's'},
@@ -223,7 +228,9 @@ int main(int argc, char *argv[]) {
       {0, 0, 0, 0},
   };
   while ((opt = getopt_long(argc, argv, optstring, long_options, &option_index)) != -1) {
-    if (opt == 'g') {
+    if (opt == 'd') {
+      delay = atoi(optarg);
+    } else if (opt == 'g') {
       graph = 1;
     } else if (opt == 'h') {
       usage(argv);
@@ -380,6 +387,10 @@ int main(int argc, char *argv[]) {
         int c;
         while ((c = getchar()) != '\n' && c != EOF);
         printf("\x1b[A");
+      }
+
+      if (delay > 0) {
+        usleep(delay * 1000);
       }
 
       int found_state = 0;
