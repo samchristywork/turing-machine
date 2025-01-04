@@ -201,6 +201,7 @@ void usage(char *argv[]) {
           " -d,--delay     Set a delay in milliseconds between steps.\n"
           " -g,--graph     Create a graphviz diagram of the input state machine.\n"
           " -h,--help      Print this usage message.\n"
+          " -o,--output    Redirect output to a file.\n"
           " -s,--step      Step through the execution manually.\n"
           " -v,--verbose   Display additional logging information.\n"
           " -V,--version   Display the software version and exit.\n"
@@ -214,14 +215,16 @@ int main(int argc, char *argv[]) {
   int graph = 0;
   int step = 0;
   int delay = 0;
+  char *output_filename = NULL;
 
   int opt;
   int option_index = 0;
-  char *optstring = "d:ghsvV";
+  char *optstring = "d:gho:svV";
   static struct option long_options[] = {
       {"delay", required_argument, 0, 'd'},
       {"graph", no_argument, 0, 'g'},
       {"help", no_argument, 0, 'h'},
+      {"output", required_argument, 0, 'o'},
       {"step", no_argument, 0, 's'},
       {"verbose", no_argument, 0, 'v'},
       {"version", no_argument, 0, 'V'},
@@ -234,6 +237,8 @@ int main(int argc, char *argv[]) {
       graph = 1;
     } else if (opt == 'h') {
       usage(argv);
+    } else if (opt == 'o') {
+      output_filename = optarg;
     } else if (opt == 's') {
       step = 1;
     } else if (opt == 'v') {
@@ -251,6 +256,15 @@ int main(int argc, char *argv[]) {
   if (optind >= argc) {
     fprintf(stderr, "No state machine selected.\n");
     usage(argv);
+  }
+
+  FILE *output_file = stdout;
+  if (output_filename) {
+    output_file = fopen(output_filename, "w");
+    if (!output_file) {
+      perror("fopen");
+      exit(EXIT_FAILURE);
+    }
   }
 
   for (int arg_idx = optind; arg_idx < argc; arg_idx++) {
@@ -279,9 +293,9 @@ int main(int argc, char *argv[]) {
     }
 
     if (graph) {
-      fprintf(stdout, "strict digraph {\n");
-      fprintf(stdout, "  rankdir=LR;\n");
-      fprintf(stdout, "  node [shape=record];\n");
+      fprintf(output_file, "strict digraph {\n");
+      fprintf(output_file, "  rankdir=LR;\n");
+      fprintf(output_file, "  node [shape=record];\n");
 
       // Print nodes with dynamic record labels
       for (int i = 0; i < state_machine_len; i++) {
@@ -297,7 +311,7 @@ int main(int argc, char *argv[]) {
           continue;
         }
 
-        fprintf(stdout, "  %s [label=\"%s|{", state_machine[i].state, state_machine[i].state);
+        fprintf(output_file, "  %s [label=\"%s|{", state_machine[i].state, state_machine[i].state);
 
         // Collect unique symbols for this state
         char symbols[256];
@@ -321,15 +335,15 @@ int main(int argc, char *argv[]) {
         for (int j = 0; j < symbol_count; j++) {
           char s = symbols[j];
           if (j > 0) {
-            fprintf(stdout, "|");
+            fprintf(output_file, "|");
           }
           if (s == ' ') {
-            fprintf(stdout, "<space>blank");
+            fprintf(output_file, "<space>blank");
           } else {
-            fprintf(stdout, "<%c>%c", s, s);
+            fprintf(output_file, "<%c>%c", s, s);
           }
         }
-        fprintf(stdout, "}\"];\n");
+        fprintf(output_file, "}\"];\n");
       }
 
       // Print edges
@@ -348,14 +362,14 @@ int main(int argc, char *argv[]) {
           dir_char = 'L';
         }
 
-        fprintf(stdout, "  %s:%s -> %s [label=\"%c, %c\"];\n",
+        fprintf(output_file, "  %s:%s -> %s [label=\"%c, %c\"];\n",
                 state_machine[i].state,
                 port,
                 state_machine[i].next_state,
                 dir_char,
                 state_machine[i].write_symbol);
       }
-      fprintf(stdout, "}\n");
+      fprintf(output_file, "}\n");
       free(tape.data);
       free(state_machine);
       continue;
@@ -367,21 +381,24 @@ int main(int argc, char *argv[]) {
     strcpy(instruction, start_state);
 
     for (sequence = 0; strcmp(instruction, "HALT") != 0 && (sequence < max_iterations || max_iterations == 0); sequence++) {
-      printf("|");
+      fprintf(output_file, "|");
       int window_size = 30;
       int start = head - window_size;
       int end = head + window_size;
 
       for (int i = start; i <= end; i++) {
-        if (i < 0 || i >= tape.len) {
-          putchar(tape.blank_symbol);
-        } else if (i == head) {
-          printf("\x1b[7m%c\x1b[0m", tape.data[i]);
+        char c = (i < 0 || i >= tape.len) ? tape.blank_symbol : tape.data[i];
+        if (i == head) {
+          if (isatty(fileno(output_file))) {
+            fprintf(output_file, "\x1b[7m%c\x1b[0m", c);
+          } else {
+            fprintf(output_file, "[%c]", c);
+          }
         } else {
-          putchar(tape.data[i]);
+          fputc(c, output_file);
         }
       }
-      printf("| %s\n", instruction);
+      fprintf(output_file, "| %s\n", instruction);
 
       if (step) {
         int c;
@@ -444,6 +461,10 @@ int main(int argc, char *argv[]) {
 
     free(tape.data);
     free(state_machine);
+  }
+
+  if (output_file != stdout) {
+    fclose(output_file);
   }
 
   return EXIT_SUCCESS;
