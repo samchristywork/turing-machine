@@ -25,6 +25,7 @@ typedef struct state {
 typedef struct tape_t {
   char *data;
   size_t len;
+  char blank_symbol;
 } tape_t;
 
 state *read_json(char *filename, int *len, int *max_iterations, int *start_offset, char *start_state, tape_t *tape) {
@@ -63,6 +64,14 @@ state *read_json(char *filename, int *len, int *max_iterations, int *start_offse
     exit(EXIT_FAILURE);
   }
 
+  const cJSON *bs = cJSON_GetObjectItemCaseSensitive(cjson, "blank_symbol");
+  if (bs && cJSON_IsString(bs) && strlen(bs->valuestring) > 0) {
+    tape->blank_symbol = bs->valuestring[0];
+    if (verbose) {
+      fprintf(stderr, "Set blank symbol to '%c'\n", tape->blank_symbol);
+    }
+  }
+
   const cJSON *initial_tape = cJSON_GetObjectItemCaseSensitive(cjson, "initial_tape");
   if (initial_tape && cJSON_IsString(initial_tape)) {
     size_t new_len = strlen(initial_tape->valuestring);
@@ -74,7 +83,7 @@ state *read_json(char *filename, int *len, int *max_iterations, int *start_offse
       }
       tape->len = new_len;
     }
-    memset(tape->data, ' ', tape->len);
+    memset(tape->data, tape->blank_symbol, tape->len);
     tape->data[tape->len] = '\0';
     for (int i = 0; i < new_len; i++) {
       tape->data[i] = initial_tape->valuestring[i];
@@ -82,6 +91,9 @@ state *read_json(char *filename, int *len, int *max_iterations, int *start_offse
     if (verbose) {
       fprintf(stderr, "Loaded initial tape of length %zu\n", new_len);
     }
+  } else {
+    memset(tape->data, tape->blank_symbol, tape->len);
+    tape->data[tape->len] = '\0';
   }
 
   const cJSON *mi = cJSON_GetObjectItemCaseSensitive(cjson, "max_iterations");
@@ -232,13 +244,12 @@ int main(int argc, char *argv[]) {
   for (int arg_idx = optind; arg_idx < argc; arg_idx++) {
     tape_t tape;
     tape.len = 80;
+    tape.blank_symbol = ' ';
     tape.data = malloc(tape.len + 1);
     if (!tape.data) {
       perror("malloc");
       exit(EXIT_FAILURE);
     }
-    memset(tape.data, ' ', tape.len);
-    tape.data[tape.len] = '\0';
 
     state *state_machine = NULL;
     int state_machine_len = 0;
@@ -345,8 +356,14 @@ int main(int argc, char *argv[]) {
 
     for (sequence = 0; strcmp(instruction, "HALT") != 0 && (sequence < max_iterations || max_iterations == 0); sequence++) {
       printf("|");
-      for (int i = 0; i < tape.len; i++) {
-        if (i == head) {
+      int window_size = 30;
+      int start = head - window_size;
+      int end = head + window_size;
+
+      for (int i = start; i <= end; i++) {
+        if (i < 0 || i >= tape.len) {
+          putchar(tape.blank_symbol);
+        } else if (i == head) {
           printf("\x1b[7m%c\x1b[0m", tape.data[i]);
         } else {
           putchar(tape.data[i]);
@@ -376,13 +393,14 @@ int main(int argc, char *argv[]) {
         if (verbose) {
           fprintf(stderr, "Expanding tape left by %d characters\n", increment);
         }
-        tape.data = realloc(tape.data, tape.len + increment + 1);
-        if (!tape.data) {
+        char *new_data = realloc(tape.data, tape.len + increment + 1);
+        if (!new_data) {
           perror("realloc");
           exit(EXIT_FAILURE);
         }
+        tape.data = new_data;
         memmove(tape.data + increment, tape.data, tape.len + 1);
-        memset(tape.data, ' ', increment);
+        memset(tape.data, tape.blank_symbol, increment);
         head += increment;
         tape.len += increment;
       } else if (head >= tape.len) {
@@ -390,12 +408,13 @@ int main(int argc, char *argv[]) {
         if (verbose) {
           fprintf(stderr, "Expanding tape right by %d characters\n", increment);
         }
-        tape.data = realloc(tape.data, tape.len + increment + 1);
-        if (!tape.data) {
+        char *new_data = realloc(tape.data, tape.len + increment + 1);
+        if (!new_data) {
           perror("realloc");
           exit(EXIT_FAILURE);
         }
-        memset(tape.data + tape.len, ' ', increment);
+        tape.data = new_data;
+        memset(tape.data + tape.len, tape.blank_symbol, increment);
         tape.len += increment;
         tape.data[tape.len] = '\0';
       }
